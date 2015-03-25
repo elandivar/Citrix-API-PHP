@@ -101,9 +101,10 @@ class Citrix {
      * @param array $data
      * @param int $timeout
      * @param bool $verify_ssl
+     * @param bool $returnAsAssocArray
      * @return bool|mixed
      */
-    protected function sendRequest( $type, $args = array(), $data = array(), $timeout = 30, $verify_ssl = false ) {
+    protected function sendRequest( $type, $args = array(), $data = array(), $timeout = 30, $verify_ssl = false, $returnAsAssocArray = false ) {
 
         $accepted_types = ['GET', 'POST'];
         $url_args = implode('/', $args);
@@ -144,7 +145,7 @@ class Citrix {
             return array(
                 'http_status' => $http_response->getCode(),
                 'http_message' => $http_response->getText(),
-                'data' => json_decode($result, true, 512, JSON_BIGINT_AS_STRING)
+                'data' => json_decode($result, $returnAsAssocArray, 512, JSON_BIGINT_AS_STRING)
             );
         }
         else
@@ -154,22 +155,24 @@ class Citrix {
     /**
      * Returns webinars scheduled for the future for the specified organizer and webinars of other organizers where the specified organizer is a co-organizer.
      *
+     * @param bool $returnAsAssocArray
      * @return bool|mixed
      */
-    public function getUpcomingWebinars() {
+    public function getUpcomingWebinars( $returnAsAssocArray = false ) {
 
         $args = array('upcomingWebinars');
 
-        return $this->sendRequest("GET", $args);
+        return $this->sendRequest("GET", $args, array(), 30, false, $returnAsAssocArray);
     }
 
     /**
      * Retrieve information on a specific webinar.
      *
      * @param $webinarKey
+     * @param bool $returnAsAssocArray
      * @return bool|mixed
      */
-    public function getWebinar($webinarKey) {
+    public function getWebinar($webinarKey, $returnAsAssocArray = false ) {
 
         if ( empty($webinarKey) )
             return false;
@@ -179,7 +182,7 @@ class Citrix {
             $webinarKey,
         );
 
-        return $this->sendRequest("GET", $args);
+        return $this->sendRequest("GET", $args, array(), 30, false, $returnAsAssocArray);
     }
 
     /**
@@ -192,9 +195,10 @@ class Citrix {
      *      email - Required string
      *
      * @param bool $resendConfirmation
+     * @param bool $returnAsAssocArray
      * @return bool
      */
-    public function createRegistrant( $webinarKey, $data = array(), $resendConfirmation = false ) {
+    public function createRegistrant( $webinarKey, $data = array(), $resendConfirmation = false, $returnAsAssocArray = false ) {
         if ( empty($webinarKey) || empty($data) )
             return false;
 
@@ -215,7 +219,49 @@ class Citrix {
         else
             $data['resendConfirmation'] = 'false';
 
-        return $this->sendRequest("POST", $args, $data);
+        return $this->sendRequest("POST", $args, $data, 30, false, $returnAsAssocArray);
 
+    }
+
+    /**
+     * Retrieve registration details for all registrants of a specific webinar.
+     * Registrant details will not include all fields captured when creating the registrant.
+     * To see all data, use the getRegistrant() function
+     *
+     * @param $webinarKey
+     * @param bool $returnAsAssocArray
+     * @return bool
+     */
+    public function getRegistrants( $webinarKey, $returnAsAssocArray = false ) {
+        if ( empty($webinarKey) )
+            return false;
+
+        $args = array(
+            'webinars',
+            $webinarKey,
+            'registrants'
+        );
+
+        return $this->sendRequest("GET", $args, array(), 30, false, $returnAsAssocArray);
+    }
+
+    /**
+     * Returns all attendees for all sessions of the specified webinar.
+     *
+     * @param $webinarKey
+     * @param bool $returnAsAssocArray
+     * @return bool
+     */
+    public function getAttendees( $webinarKey, $returnAsAssocArray = false ) {
+        if ( empty($webinarKey) )
+            return false;
+
+        $args = array(
+            'webinars',
+            $webinarKey,
+            'attendees'
+        );
+
+        return $this->sendRequest("GET", $args, array(), 30, false, $returnAsAssocArray);
     }
 }
