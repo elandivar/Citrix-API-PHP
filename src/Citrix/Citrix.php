@@ -252,16 +252,50 @@ class Citrix {
      * @param bool $returnAsAssocArray
      * @return bool
      */
-    public function getAttendees( $webinarKey, $returnAsAssocArray = false ) {
+    public function getAttendees( $webinarKey, $sessionKey = '', $returnAsAssocArray = false ) {
+        if ( empty($webinarKey) )
+            return false;
+
+        //Session key not specified, try to get the session key of the last webinar session
+        if ( empty($sessionKey) ) {
+            $sessions = $this->getWebinarSessions( $webinarKey );
+
+            if ( is_array( $sessions )) {
+                if ( $sessions['http_status'] == '200' ) {
+                    if ( !empty( $sessions['data'] ) ) {
+
+                        //get the last session
+                        $sessionKey = $sessions['data'][0]->sessionKey;
+                    }
+                }
+            }
+        }
+
+        if ( empty($sessionKey) )
+            return false;
+
+        $args = array(
+            'webinars',
+            $webinarKey,
+            'sessions',
+            $sessionKey,
+            'attendees'
+        );
+
+        return $this->sendRequest("GET", $args, array(), 30, false, $returnAsAssocArray);
+    }
+
+    public function getWebinarSessions( $webinarKey, $returnAsAssocArray = false ) {
         if ( empty($webinarKey) )
             return false;
 
         $args = array(
             'webinars',
             $webinarKey,
-            'attendees'
+            'sessions'
         );
 
         return $this->sendRequest("GET", $args, array(), 30, false, $returnAsAssocArray);
+
     }
 }
